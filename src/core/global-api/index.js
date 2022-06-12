@@ -51,6 +51,9 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     return obj
   }
 
+  // 创建一个空对象，这个对象不需要原型，可以提高性能
+  // component, directive, filter
+  // 这三个用来存储全局的组件、指令和过滤器
   Vue.options = Object.create(null)
   ASSET_TYPES.forEach(type => {
     Vue.options[type + 's'] = Object.create(null)
@@ -60,10 +63,15 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   // components with in Weex's multi-instance scenarios.
   Vue.options._base = Vue
 
+  // 设置 keep-alive 组件
   extend(Vue.options.components, builtInComponents)
 
+  // 注册 Vue.use() 用来注册插件
   initUse(Vue)
+  // 注册 Vue.mixin() 实现混入
   initMixin(Vue)
+  // 注册 Vue.extend() 基于传入的 options 返回一个组件的构造函数
   initExtend(Vue)
+  // 注册 Vue.directive(), Vue.component(), Vue.filter()
   initAssetRegisters(Vue)
 }
