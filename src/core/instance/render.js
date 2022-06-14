@@ -66,6 +66,8 @@ export function renderMixin (Vue: Class<Component>) {
     return nextTick(fn, this)
   }
 
+  // _render 的作用是调用用户传入的 render 或编译器生成的 render
+  // 返回虚拟 DOM
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
     const { render, _parentVnode } = vm.$options

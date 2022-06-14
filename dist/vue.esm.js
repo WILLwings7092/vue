@@ -4985,6 +4985,8 @@ function stateMixin (Vue) {
 var uid$3 = 0;
 
 function initMixin (Vue) {
+  // 给 Vue 实例增加 _init() 方法
+  // 合并 options / 初始化操作
   Vue.prototype._init = function (options) {
     var vm = this;
     // a uid
@@ -4999,6 +5001,7 @@ function initMixin (Vue) {
     }
 
     // a flag to avoid this being observed
+    // 如果是 Vue 实例，不需要被 observe
     vm._isVue = true;
     // merge options
     if (options && options._isComponent) {
@@ -5021,13 +5024,24 @@ function initMixin (Vue) {
     }
     // expose real self
     vm._self = vm;
+    // vm 的生命周期相关变量初始化
+    // $parent/$root/$children/$refs
     initLifecycle(vm);
+    // vm 的事件监听初始化，父组件绑定在当前组件上的事件
     initEvents(vm);
+    // vm 的编译 render 初始化
+    // $slots/$scopedSlots/_c/$createElement/$attrs/$listeners
     initRender(vm);
+    // beforeCreate 生命钩子的回调
     callHook(vm, 'beforeCreate');
+    // 和下面的 initProvide 是一对儿，用于实现依赖注入
+    // 把 inject 的成员注入到 vm 上
     initInjections(vm); // resolve injections before data/props
+    // 初始化 vm 的 _props/methods/_data/computed/watch
     initState(vm);
+    // 初始化 provide
     initProvide(vm); // resolve provide after data/props
+    // created 生命钩子的回调
     callHook(vm, 'created');
 
     /* istanbul ignore if */
@@ -5099,6 +5113,7 @@ function resolveModifiedOptions (Ctor) {
   return modified
 }
 
+// 此处不用 class 是为了方便后续给 Vue 实例混入实例成员
 function Vue (options) {
   if (process.env.NODE_ENV !== 'production' &&
     !(this instanceof Vue)
@@ -5108,16 +5123,25 @@ function Vue (options) {
   this._init(options);
 }
 
+// 注册 vm 的 _init() 方法，初始化 vm
 initMixin(Vue);
+// 注册 vm 的 $data/$props/$set/$delete/$watch
 stateMixin(Vue);
+// 初始化事件相关方法
+// $on/$once/$off/$emit
 eventsMixin(Vue);
+// 初始化生命周期相关的混入方法
+// _update/$forceUpdate/$destroy
 lifecycleMixin(Vue);
+// 混入 render
+// $nextTick/_render
 renderMixin(Vue);
 
 /*  */
 
 function initUse (Vue) {
   Vue.use = function (plugin) {
+    // this._insxxx，此处是由 Vue 调用 .use() ，所以 this 指向 Vue 的构造函数
     var installedPlugins = (this._installedPlugins || (this._installedPlugins = []));
     if (installedPlugins.indexOf(plugin) > -1) {
       return this
@@ -5170,15 +5194,18 @@ function initExtend (Vue) {
 
     var name = extendOptions.name || Super.options.name;
     if (process.env.NODE_ENV !== 'production' && name) {
+      // 如果是开发环境，验证组件的名称
       validateComponentName(name);
     }
 
     var Sub = function VueComponent (options) {
       this._init(options);
     };
+    // 原型继承自 Vue
     Sub.prototype = Object.create(Super.prototype);
     Sub.prototype.constructor = Sub;
     Sub.cid = cid++;
+    // 合并 options
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
@@ -5255,13 +5282,17 @@ function initAssetRegisters (Vue) {
         if (process.env.NODE_ENV !== 'production' && type === 'component') {
           validateComponentName(id);
         }
+        // Vue.component('comp', { template: '' })
         if (type === 'component' && isPlainObject(definition)) {
           definition.name = definition.name || id;
+          // 把组件配置转化为组件的构造函数
           definition = this.options._base.extend(definition);
         }
         if (type === 'directive' && typeof definition === 'function') {
           definition = { bind: definition, update: definition };
         }
+        // 全局注册，存储资源并赋值
+        // this.options['components']['comp'] = definition
         this.options[type + 's'][id] = definition;
         return definition
       }
@@ -5468,6 +5499,9 @@ function initGlobalAPI (Vue) {
     return obj
   };
 
+  // 创建一个空对象，这个对象不需要原型，可以提高性能
+  // component, directive, filter
+  // 这三个用来存储全局的组件、指令和过滤器
   Vue.options = Object.create(null);
   ASSET_TYPES.forEach(function (type) {
     Vue.options[type + 's'] = Object.create(null);
@@ -5477,11 +5511,16 @@ function initGlobalAPI (Vue) {
   // components with in Weex's multi-instance scenarios.
   Vue.options._base = Vue;
 
+  // 设置 keep-alive 组件
   extend(Vue.options.components, builtInComponents);
 
+  // 注册 Vue.use() 用来注册插件
   initUse(Vue);
+  // 注册 Vue.mixin() 实现混入
   initMixin$1(Vue);
+  // 注册 Vue.extend() 基于传入的 options 返回一个组件的构造函数
   initExtend(Vue);
+  // 注册 Vue.directive(), Vue.component(), Vue.filter()
   initAssetRegisters(Vue);
 }
 

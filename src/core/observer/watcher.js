@@ -100,10 +100,12 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    // 先更新内部节点，所以先把当前 watcher 入栈
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      // 最终调用 updateComponent 的地方
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
