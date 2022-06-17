@@ -80,6 +80,8 @@ export default class Watcher {
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
+      // expOrFn 是字符串的时候，例如 watch: { 'person.name': function... }
+      // parsePath('person.name') 返回一个获取 person.name 值的函数
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
