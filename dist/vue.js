@@ -737,6 +737,7 @@
     }
   };
 
+  // 发布通知
   Dep.prototype.notify = function notify () {
     // stabilize the subscriber list first
     var subs = this.subs.slice();
@@ -746,6 +747,7 @@
       // order
       subs.sort(function (a, b) { return a.id - b.id; });
     }
+    // 调用每个订阅者的 update 方法实现更新
     for (var i = 0, l = subs.length; i < l; i++) {
       subs[i].update();
     }
@@ -760,12 +762,15 @@
   var targetStack = [];
 
   // 入栈并将当前 watcher 赋值给 Dep.target
+  // 父子组件嵌套时先把父组件对应的 watcher 入栈，
+  // 再去处理子组件的 watcher，子组件的处理完后，再把父组件的 watcher 出栈，继续操作
   function pushTarget (target) {
     targetStack.push(target);
     Dep.target = target;
   }
 
   function popTarget () {
+    // 出栈操作
     targetStack.pop();
     Dep.target = targetStack[targetStack.length - 1];
   }
@@ -866,8 +871,10 @@
    */
 
   var arrayProto = Array.prototype;
+  // 使用数组的原型创建一个新的对象
   var arrayMethods = Object.create(arrayProto);
 
+  // 修改数组元素的方法
   var methodsToPatch = [
     'push',
     'pop',
@@ -883,12 +890,16 @@
    */
   methodsToPatch.forEach(function (method) {
     // cache original method
+    // 保留数组原方法
     var original = arrayProto[method];
+    // 调用 Object.defineProperty() 重新定义修改数组的方法
     def(arrayMethods, method, function mutator () {
       var args = [], len = arguments.length;
       while ( len-- ) args[ len ] = arguments[ len ];
 
+      // 执行数组的原方法
       var result = original.apply(this, args);
+      // 获取数组对象的 ob 对象
       var ob = this.__ob__;
       var inserted;
       switch (method) {
@@ -900,8 +911,10 @@
           inserted = args.slice(2);
           break
       }
+      // 对插入的新元素，重新遍历数组元素设置为响应式数据
       if (inserted) { ob.observeArray(inserted); }
       // notify change
+      // 调用了修改数组的方法，调用数组的ob对象发送通知
       ob.dep.notify();
       return result
     });
@@ -1117,16 +1130,22 @@
     ) {
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
     }
+    // 判断 target 是否是对象，key 是否是合法的索引
     if (Array.isArray(target) && isValidArrayIndex(key)) {
       target.length = Math.max(target.length, key);
+      // 通过 splice 对 key 位置的元素进行替换
+      // splice 在 array.js 进行了响应化的处理
       target.splice(key, 1, val);
       return val
     }
+    // 如果 key 在对象中已经存在，则直接赋值
     if (key in target && !(key in Object.prototype)) {
       target[key] = val;
       return val
     }
+    // 获取 target 中的 observer 对象
     var ob = (target).__ob__;
+    // 如果 target 是 vue 实例或 $data ，则直接返回
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
         'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -1134,11 +1153,14 @@
       );
       return val
     }
+    // 如果 ob 对象不存在，则 target 不是响应式对象，直接赋值
     if (!ob) {
       target[key] = val;
       return val
     }
+    // 把 key 设置为响应式属性
     defineReactive$$1(ob.value, key, val);
+    // 发送通知
     ob.dep.notify();
     return val
   }
@@ -2027,9 +2049,11 @@
 
   function nextTick (cb, ctx) {
     var _resolve;
+    // 把 cb 加上异常处理存入 callbacks 数组中
     callbacks.push(function () {
       if (cb) {
         try {
+          // 调用 cb()
           cb.call(ctx);
         } catch (e) {
           handleError(e, ctx, 'nextTick');
@@ -2040,10 +2064,12 @@
     });
     if (!pending) {
       pending = true;
+      // 调用
       timerFunc();
     }
     // $flow-disable-line
     if (!cb && typeof Promise !== 'undefined') {
+      // 返回 promise 对象
       return new Promise(function (resolve) {
         _resolve = resolve;
       })
@@ -4508,6 +4534,8 @@
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn;
     } else {
+      // expOrFn 是字符串的时候，例如 watch: { 'person.name': function... }
+      // parsePath('person.name') 返回一个获取 person.name 值的函数
       this.getter = parsePath(expOrFn);
       if (!this.getter) {
         this.getter = noop;
@@ -4991,19 +5019,26 @@
       cb,
       options
     ) {
+      // 获取 Vue 实例 this
       var vm = this;
       if (isPlainObject(cb)) {
+        // 判断如果 cb 是对象，执行 createWatcher
         return createWatcher(vm, expOrFn, cb, options)
       }
       options = options || {};
+      // 标记为用户 watcher
       options.user = true;
+      // 创建用户 watcher 对象
       var watcher = new Watcher(vm, expOrFn, cb, options);
+      // 判断 immediate ，如果为 true
       if (options.immediate) {
+        // 立即执行一次 cb 回调，并把当前值传入
         var info = "callback for immediate watcher \"" + (watcher.expression) + "\"";
         pushTarget();
         invokeWithErrorHandling(cb, vm, [watcher.value], vm, info);
         popTarget();
       }
+      // 返回取消监听的方法
       return function unwatchFn () {
         watcher.teardown();
       }
@@ -5521,6 +5556,7 @@
     Vue.nextTick = nextTick;
 
     // 2.6 explicit observable API
+    // 让一个对象可响应
     Vue.observable = function (obj) {
       observe(obj);
       return obj
