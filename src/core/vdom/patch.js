@@ -71,12 +71,16 @@ export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
 
+  // modules 节点的属性/事件/样式的操作
+  // nodeOps 节点操作
   const { modules, nodeOps } = backend
 
   for (i = 0; i < hooks.length; ++i) {
+    // eg. cbs['update'] = []
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
       if (isDef(modules[j][hooks[i]])) {
+        // i.e. cbs['update'] = [updateAttrs, updateClass, update...]
         cbs[hooks[i]].push(modules[j][hooks[i]])
       }
     }
@@ -697,25 +701,41 @@ export function createPatchFunction (backend) {
     }
   }
 
+  // 函数柯里化，让一个函数返回一个函数
+  // createPatchFunction({ nodeOps, modules }) 传入平台相关的两个参数
+  // core 中的 createPatchFunction(backend), const { modules, nodeOps } = backend
+  // core 中的方法和平台无关，传入两个参数后，可以在上面的函数中使用这两个参数
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    // 新的 VNode 不存在（少见）
     if (isUndef(vnode)) {
+      // 老的 VNode 存在，执行 Destroy 钩子函数
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
     }
 
     let isInitialPatch = false
+    // 存储新插入的 Vnode
+    // 存储这些节点的目的是把这些 Vnode 对应的 Dom 元素挂载到 DOM 树上之后，
+    // 触发这些 Vnode 的 insert 钩子函数
     const insertedVnodeQueue = []
 
+    // 老的 VNode 不存在
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
       isInitialPatch = true
+      // 创建新的 VNode
       createElm(vnode, insertedVnodeQueue)
     } else {
+      // 新老 VNode 都存在，更新
       const isRealElement = isDef(oldVnode.nodeType)
+      // 判断参数1是否是真实 DOM，不是真实 DOM
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
+        // 更新操作，diff 算法
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+        // 第一个参数是真实 DOM，创建 VNode
+        // 初始化
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
@@ -748,6 +768,8 @@ export function createPatchFunction (backend) {
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
+        // 创建 DOM 节点
+        // 把 VNode 转为真实 DOM，挂载到 parentElm 里面
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -790,6 +812,8 @@ export function createPatchFunction (backend) {
 
         // destroy old node
         if (isDef(parentElm)) {
+          // parentElm 是从 old Vnode 获取，
+          // 把 old Vnode 从界面移除，并触发相关的钩子函数
           removeVnodes([oldVnode], 0, 0)
         } else if (isDef(oldVnode.tag)) {
           invokeDestroyHook(oldVnode)
@@ -797,6 +821,10 @@ export function createPatchFunction (backend) {
       }
     }
 
+    // isInitialPatch 作用是记录当前 VNode 对应的 DOM 元素 \
+    // 并没有挂载到 DOM 树上，而是存储在内存中
+    // 如果 DOM 元素没有挂载到 DOM 树上，
+    // 此时不去触发 insertedVnodeQueue 里面的钩子函数 inserted
     invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
     return vnode.elm
   }
