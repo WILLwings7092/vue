@@ -152,7 +152,7 @@ export function createPatchFunction (backend) {
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
-    if (isDef(tag)) {
+    if (isDef(tag)) { // VNode 是标签节点
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
           creatingElmInVPre++
@@ -167,6 +167,7 @@ export function createPatchFunction (backend) {
         }
       }
 
+      // 判断 VNode 是否有命名空间
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
         : nodeOps.createElement(tag, vnode)
@@ -192,6 +193,7 @@ export function createPatchFunction (backend) {
           insert(parentElm, vnode.elm, refElm)
         }
       } else {
+        // 把 VNode 中所有的子元素转为 DOM 对象
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
           invokeCreateHooks(vnode, insertedVnodeQueue)
@@ -202,10 +204,10 @@ export function createPatchFunction (backend) {
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
         creatingElmInVPre--
       }
-    } else if (isTrue(vnode.isComment)) {
+    } else if (isTrue(vnode.isComment)) { // VNode 是注释节点
       vnode.elm = nodeOps.createComment(vnode.text)
       insert(parentElm, vnode.elm, refElm)
-    } else {
+    } else { // VNode 是文本节点
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
@@ -306,10 +308,12 @@ export function createPatchFunction (backend) {
   }
 
   function invokeCreateHooks (vnode, insertedVnodeQueue) {
+    // 调用 VNode 的钩子函数
     for (let i = 0; i < cbs.create.length; ++i) {
       cbs.create[i](emptyNode, vnode)
     }
     i = vnode.data.hook // Reuse variable
+    // 调用组件的钩子函数
     if (isDef(i)) {
       if (isDef(i.create)) i.create(emptyNode, vnode)
       if (isDef(i.insert)) insertedVnodeQueue.push(vnode)
