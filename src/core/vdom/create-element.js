@@ -31,6 +31,7 @@ export function createElement (
   data: any,
   children: any,
   normalizationType: any,
+  // alwaysNormalize 的意义是如何处理 children
   alwaysNormalize: boolean
 ): VNode | Array<VNode> {
   if (Array.isArray(data) || isPrimitive(data)) {

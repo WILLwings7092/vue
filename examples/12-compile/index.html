@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>compile</title>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Vue <span>模板编译过程</span></h1>
+      <p>{{ msg }}</p>
+      <comp @myclick="handler"></comp>
+    </div>
+
+    <script src="../../dist/vue.js"></script>
+    <script>
+      Vue.component("comp", {
+        template: `<div>I am a comp</div>`,
+      });
+      const vm = new Vue({
+        el: "#app",
+        data: {
+          msg: "Hello compiler",
+        },
+        methods: {
+          handler() {
+            console.log("test");
+          },
+        },
+      });
+      console.log(vm.$options.render);
+    </script>
+    <script>
+      // 编译生成的 render 函数
+      (function anonymous() {
+        with (this) {
+          return _c(
+            "div",
+            { attrs: { id: "app" } },
+            [
+              // <h1>Vue <span>模板编译过程</span></h1> 是静态内容，没有使用插值表达式和指令
+              // 在处理模板的过程中，会对静态内容做优化处理
+              _m(0),
+              // 创建文本节点，本例对应 h1 和 p 标签之间的空白位置
+              _v(" "),
+              _c("p", [_v(_s(msg))]),
+              _v(" "),
+              _c("comp", { on: { myclick: handler } }),
+            ],
+            1
+          );
+        }
+      });
+    </script>
+  </body>
+</html>

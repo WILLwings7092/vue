@@ -3430,6 +3430,7 @@
     data,
     children,
     normalizationType,
+    // alwaysNormalize 的意义是如何处理 children
     alwaysNormalize
   ) {
     if (Array.isArray(data) || isPrimitive(data)) {
@@ -12129,14 +12130,18 @@
     return el && el.innerHTML
   });
 
+  // 保留 Vue 实例的 $mount 方法
   var mount = Vue.prototype.$mount;
   Vue.prototype.$mount = function (
     el,
+    // 非 ssr 情况下为 false ，ssr 的时候为 true
     hydrating
   ) {
+    // 获取 el 对象
     el = el && query(el);
 
     /* istanbul ignore if */
+    // el 不能是 body 或者 html
     if (el === document.body || el === document.documentElement) {
       warn(
         "Do not mount Vue to <html> or <body> - mount to normal elements instead."
@@ -12146,11 +12151,15 @@
 
     var options = this.$options;
     // resolve template/el and convert to render function
+    // 把 template/el 转换成 render 函数
     if (!options.render) {
       var template = options.template;
+      // 如果模板存在
       if (template) {
         if (typeof template === 'string') {
+          // 如果模板是 id 选择器
           if (template.charAt(0) === '#') {
+            // 获取对应的 DOM 对象的 innerHTML
             template = idToTemplate(template);
             /* istanbul ignore if */
             if (!template) {
@@ -12161,6 +12170,7 @@
             }
           }
         } else if (template.nodeType) {
+          // 如果模板是元素，返回元素的 innerHTML
           template = template.innerHTML;
         } else {
           {
@@ -12169,6 +12179,7 @@
           return this
         }
       } else if (el) {
+        // 如果没有 template，获取 el 的 outerHTML 作为模板
         template = getOuterHTML(el);
       }
       if (template) {
