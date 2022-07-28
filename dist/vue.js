@@ -9845,6 +9845,7 @@
     template,
     options
   ) {
+    // 1. 解析 options
     warn$2 = options.warn || baseWarn;
 
     platformIsPreTag = options.isPreTag || no;
@@ -9970,6 +9971,7 @@
       }
     }
 
+    // 2. 对模板解析
     parseHTML(template, {
       warn: warn$2,
       expectHTML: options.expectHTML,
@@ -9979,6 +9981,7 @@
       shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
       shouldKeepComment: options.comments,
       outputSourceRange: options.outputSourceRange,
+      // 解析过程中的回调函数，生成 AST
       start: function start (tag, attrs, unary, start$1, end) {
         // check namespace.
         // inherit parent ns if there is one
@@ -10875,8 +10878,10 @@
     isStaticKey = genStaticKeysCached(options.staticKeys || '');
     isPlatformReservedTag = options.isReservedTag || no;
     // first pass: mark all non-static nodes.
+    // 标记静态节点
     markStatic$1(root);
     // second pass: mark static roots.
+    // 标记静态根节点
     markStaticRoots(root, false);
   }
 
@@ -10888,11 +10893,14 @@
   }
 
   function markStatic$1 (node) {
+    // 判断当前 astNode 是否是静态的
     node.static = isStatic(node);
+    // 元素节点
     if (node.type === 1) {
       // do not make component slot content static. this avoids
       // 1. components not able to mutate slot nodes
       // 2. static slot content fails for hot-reloading
+      // 是组件，不是 slot，没有 inline-template
       if (
         !isPlatformReservedTag(node.tag) &&
         node.tag !== 'slot' &&
@@ -10900,8 +10908,10 @@
       ) {
         return
       }
+      // 遍历 children
       for (var i = 0, l = node.children.length; i < l; i++) {
         var child = node.children[i];
+        // 标记静态
         markStatic$1(child);
         if (!child.static) {
           node.static = false;
@@ -10927,6 +10937,8 @@
       // For a node to qualify as a static root, it should have children that
       // are not just static text. Otherwise the cost of hoisting out will
       // outweigh the benefits and it's better off to just always render it fresh.
+      // 如果一个元素内只有文本节点， 此时这个元素不是静态的 Root
+      // Vue 认为这种优化会带来负面的影响
       if (node.static && node.children.length && !(
         node.children.length === 1 &&
         node.children[0].type === 3
@@ -10936,6 +10948,7 @@
       } else {
         node.staticRoot = false;
       }
+      // 检测当前节点的子节点中是否有静态的 Root
       if (node.children) {
         for (var i = 0, l = node.children.length; i < l; i++) {
           markStaticRoots(node.children[i], isInFor || !!node.for);
@@ -10950,6 +10963,7 @@
   }
 
   function isStatic (node) {
+    // 表达式
     if (node.type === 2) { // expression
       return false
     }
@@ -10959,9 +10973,9 @@
     return !!(node.pre || (
       !node.hasBindings && // no dynamic bindings
       !node.if && !node.for && // not v-if or v-for or v-else
-      !isBuiltInTag(node.tag) && // not a built-in
-      isPlatformReservedTag(node.tag) && // not a component
-      !isDirectChildOfTemplateFor(node) &&
+      !isBuiltInTag(node.tag) && // not a built-in 不是内置组件
+      isPlatformReservedTag(node.tag) && // not a component 不是组件
+      !isDirectChildOfTemplateFor(node) && // 不是 v-for 下的直接子节点
       Object.keys(node).every(isStaticKey)
     ))
   }
@@ -11910,6 +11924,7 @@
   }
 
   function createCompileToFunctionFn (compile) {
+    // 通过闭包缓存编译后的结果
     var cache = Object.create(null);
 
     return function compileToFunctions (
@@ -11917,6 +11932,7 @@
       options,
       vm
     ) {
+      // clone options，防止污染 Vue 中的 options
       options = extend({}, options);
       var warn$$1 = options.warn || warn;
       delete options.warn;
@@ -11940,6 +11956,8 @@
       }
 
       // check cache
+      // 1. 读取缓存中的 CompiledFunctionResult 对象，如果有直接返回
+      // options.delimiters 只有完整版的 Vue 才有，作用是改变插值表达式使用的符号
       var key = options.delimiters
         ? String(options.delimiters) + template
         : template;
@@ -11948,6 +11966,8 @@
       }
 
       // compile
+      // 2. 把模板编译为编译对象 (render, staticRenderFns)
+      // render 存储着字符串形式的 js 代码
       var compiled = compile(template, options);
 
       // check compilation errors/tips
@@ -11981,6 +12001,7 @@
       // turn code into functions
       var res = {};
       var fnGenErrors = [];
+      // 3. 把字符串形式的 js 代码转换成 js 方法
       res.render = createFunction(compiled.render, fnGenErrors);
       res.staticRenderFns = compiled.staticRenderFns.map(function (code) {
         return createFunction(code, fnGenErrors)
@@ -12005,6 +12026,7 @@
         }
       }
 
+      // 4. 缓存并返回 res 对象 (render, staticRenderFns方法)
       return (cache[key] = res)
     }
   }
@@ -12012,12 +12034,17 @@
   /*  */
 
   function createCompilerCreator (baseCompile) {
+    // baseOptions 平台相关的 options
+    // src/platforms/web/compiler/options.js 中定义
     return function createCompiler (baseOptions) {
       function compile (
         template,
-        options
+        options // 用户传入的选项
       ) {
+        // finalOptions 原型指向了 baseOptions
+        // 作用是合并 baseOptions 和传入的 CompilerOptions
         var finalOptions = Object.create(baseOptions);
+        // 存储编译过程中出现的一些错误和信息
         var errors = [];
         var tips = [];
 
@@ -12065,6 +12092,7 @@
 
         finalOptions.warn = warn;
 
+        // compiled 类型是 { ast, render, staticRenderFns }
         var compiled = baseCompile(template.trim(), finalOptions);
         {
           detectErrors(compiled.ast, warn);
@@ -12090,14 +12118,20 @@
     template,
     options
   ) {
+    // 把模板转换成 ast 抽象语法树
+    // 抽象语法树，用来以树形的方式描述代码结构
     var ast = parse(template.trim(), options);
     if (options.optimize !== false) {
+      // 优化抽象语法树
       optimize(ast, options);
     }
+    // 把抽象语法树生成字符串形式的 js 代码
     var code = generate(ast, options);
     return {
       ast: ast,
+      // 渲染函数
       render: code.render,
+      // 静态渲染函数，生成静态 VNode 树
       staticRenderFns: code.staticRenderFns
     }
   });

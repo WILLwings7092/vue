@@ -5,12 +5,17 @@ import { detectErrors } from './error-detector'
 import { createCompileToFunctionFn } from './to-function'
 
 export function createCompilerCreator (baseCompile: Function): Function {
+  // baseOptions 平台相关的 options
+  // src/platforms/web/compiler/options.js 中定义
   return function createCompiler (baseOptions: CompilerOptions) {
     function compile (
       template: string,
-      options?: CompilerOptions
+      options?: CompilerOptions // 用户传入的选项
     ): CompiledResult {
+      // finalOptions 原型指向了 baseOptions
+      // 作用是合并 baseOptions 和传入的 CompilerOptions
       const finalOptions = Object.create(baseOptions)
+      // 存储编译过程中出现的一些错误和信息
       const errors = []
       const tips = []
 
@@ -58,6 +63,7 @@ export function createCompilerCreator (baseCompile: Function): Function {
 
       finalOptions.warn = warn
 
+      // compiled 类型是 { ast, render, staticRenderFns }
       const compiled = baseCompile(template.trim(), finalOptions)
       if (process.env.NODE_ENV !== 'production') {
         detectErrors(compiled.ast, warn)
