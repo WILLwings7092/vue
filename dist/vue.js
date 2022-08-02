@@ -11240,6 +11240,8 @@
       } else {
         var data;
         if (!el.plain || (el.pre && state.maybeComponent(el))) {
+          // 生成元素的属性/指令/事件等
+          // 处理各种指令，包括 genDirectives (model/text/html)
           data = genData$2(el, state);
         }
 
@@ -11660,10 +11662,12 @@
   function genText (text) {
     return ("_v(" + (text.type === 2
       ? text.expression // no need for () because already wrapped in _s()
-      : transformSpecialNewlines(JSON.stringify(text.text))) + ")")
+    // JSON.stringify(comment.text) 字符串加上引号：'hello' -> '"hello"'
+    : transformSpecialNewlines(JSON.stringify(text.text))) + ")")
   }
 
   function genComment (comment) {
+    // JSON.stringify(comment.text) 字符串加上引号：'hello' -> '"hello"'
     return ("_e(" + (JSON.stringify(comment.text)) + ")")
   }
 
