@@ -3254,6 +3254,7 @@
 
   var hooksToMerge = Object.keys(componentVNodeHooks);
 
+  // 最终把组件转换成了 VNode 对象
   function createComponent (
     Ctor,
     data,
@@ -3268,6 +3269,8 @@
     var baseCtor = context.$options._base;
 
     // plain options object: turn it into a constructor
+    // 如果 Ctor 不是一个构造函数，是一个对象
+    // 使用 Vue.extend() 创造一个子组件的构造函数
     if (isObject(Ctor)) {
       Ctor = baseCtor.extend(Ctor);
     }
@@ -3307,6 +3310,7 @@
     resolveConstructorOptions(Ctor);
 
     // transform component v-model data into props & events
+    // 处理组件上的 v-model
     if (isDef(data.model)) {
       transformModel(Ctor.options, data);
     }
@@ -3339,10 +3343,14 @@
     }
 
     // install component management hooks onto the placeholder node
+    // 安装组件的钩子函数 init/prepatch/insert/destroy
+    // 安装好了 data.hook 中的钩子函数
     installComponentHooks(data);
 
     // return a placeholder vnode
     var name = Ctor.options.name || tag;
+    // 创建自定义组件的 VNode，设置自定义组件的名字
+    // 记录 this.componentOptions = componentOptions
     var vnode = new VNode(
       ("vue-component-" + (Ctor.cid) + (name ? ("-" + name) : '')),
       data, undefined, undefined, undefined, context,
@@ -3365,16 +3373,21 @@
       parent: parent
     };
     // check inline-template render functions
+    // 获取 inline-template
+    // <comp inline-template> xxx </comp>
     var inlineTemplate = vnode.data.inlineTemplate;
     if (isDef(inlineTemplate)) {
       options.render = inlineTemplate.render;
       options.staticRenderFns = inlineTemplate.staticRenderFns;
     }
+    // 创建组件实例
     return new vnode.componentOptions.Ctor(options)
   }
 
   function installComponentHooks (data) {
     var hooks = data.hook || (data.hook = {});
+    //  用户可以传入自定义钩子函数
+    // 把用户传入的自定义钩子函数和 componentVNodeHooks 中预定义的钩子函数合并
     for (var i = 0; i < hooksToMerge.length; i++) {
       var key = hooksToMerge[i];
       var existing = hooks[key];
@@ -5261,8 +5274,10 @@
      */
     Vue.extend = function (extendOptions) {
       extendOptions = extendOptions || {};
+      // Vue 构造函数
       var Super = this;
       var SuperId = Super.cid;
+      // 从缓存中加载组件的构造函数
       var cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {});
       if (cachedCtors[SuperId]) {
         return cachedCtors[SuperId]
@@ -5275,6 +5290,7 @@
       }
 
       var Sub = function VueComponent (options) {
+        // 调用 _init() 初始化
         this._init(options);
       };
       // 原型继承自 Vue
@@ -5309,6 +5325,7 @@
         Sub[type] = Super[type];
       });
       // enable recursive self-lookup
+      // 把组件构造函数保存到 Ctor.options.components.comp = Ctor
       if (name) {
         Sub.options.components[name] = Sub;
       }
@@ -5321,6 +5338,7 @@
       Sub.sealedOptions = extend({}, Sub.options);
 
       // cache constructor
+      // 把组件的构造函数缓存到 options._Ctor
       cachedCtors[SuperId] = Sub;
       return Sub
     };
@@ -5346,6 +5364,8 @@
     /**
      * Create asset registration methods.
      */
+    // 遍历 ASSET_TYPES 数组，为 Vue 定义相应方法
+    // ASSET_TYPES 包括了 directive、component、filter
     ASSET_TYPES.forEach(function (type) {
       Vue[type] = function (
         id,
@@ -6152,6 +6172,8 @@
       if (isDef(i)) {
         var isReactivated = isDef(vnode.componentInstance) && i.keepAlive;
         if (isDef(i = i.hook) && isDef(i = i.init)) {
+          // 调用 init() 方法，创建和挂载组件实例
+          // init() 的过程中创建好了组件的真实 DOM，挂载到了 vnode.elm 上
           i(vnode, false /* hydrating */);
         }
         // after calling the init hook, if the vnode is a child component
@@ -6159,7 +6181,15 @@
         // component also has set the placeholder vnode's elm.
         // in that case we can just return the element and be done.
         if (isDef(vnode.componentInstance)) {
+          // 组件的创建过程是先创建父组件，再创建子组件
+          // 组件的挂载过程是先挂载子组件，再挂载父组件
+          // 组件的粒度不是越小越好，因为嵌套一层组件，就会重复执行一遍组件的创建过程，比较消耗性能
+          // 组件的抽象过程要合理，比如侧边栏组件，内部的导航如果外部没有再使用，
+          // 可以把侧边栏和内部的导航设计成一个组件，减少组件重新创建的过程
+
+          // 调用钩子函数（VNode的钩子函数初始化属性/事件/样式等，组件的钩子函数）
           initComponent(vnode, insertedVnodeQueue);
+          // 把组件对应的 DOM 插入到父元素中
           insert(parentElm, vnode.elm, refElm);
           if (isTrue(isReactivated)) {
             reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm);

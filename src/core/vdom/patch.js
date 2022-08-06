@@ -218,6 +218,8 @@ export function createPatchFunction (backend) {
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
       if (isDef(i = i.hook) && isDef(i = i.init)) {
+        // 调用 init() 方法，创建和挂载组件实例
+        // init() 的过程中创建好了组件的真实 DOM，挂载到了 vnode.elm 上
         i(vnode, false /* hydrating */)
       }
       // after calling the init hook, if the vnode is a child component
@@ -225,7 +227,15 @@ export function createPatchFunction (backend) {
       // component also has set the placeholder vnode's elm.
       // in that case we can just return the element and be done.
       if (isDef(vnode.componentInstance)) {
+        // 组件的创建过程是先创建父组件，再创建子组件
+        // 组件的挂载过程是先挂载子组件，再挂载父组件
+        // 组件的粒度不是越小越好，因为嵌套一层组件，就会重复执行一遍组件的创建过程，比较消耗性能
+        // 组件的抽象过程要合理，比如侧边栏组件，内部的导航如果外部没有再使用，
+        // 可以把侧边栏和内部的导航设计成一个组件，减少组件重新创建的过程
+
+        // 调用钩子函数（VNode的钩子函数初始化属性/事件/样式等，组件的钩子函数）
         initComponent(vnode, insertedVnodeQueue)
+        // 把组件对应的 DOM 插入到父元素中
         insert(parentElm, vnode.elm, refElm)
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
